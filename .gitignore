@@ -1,0 +1,8 @@
+# Local environment variables and keys
+.env
+.env.local
+
+# Python files to ignore
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

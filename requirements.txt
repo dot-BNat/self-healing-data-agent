@@ -1,0 +1,20 @@
+# Core Framework & UI
+streamlit>=1.35.0
+
+# LangChain Ecosystem
+streamlit>=1.35.0
+langchain>=1.2.0
+langchain-core>=0.3.0
+langchain-huggingface>=0.1.0
+pandas>=2.0.0
+duckdb>=1.0.0
+openpyxl>=3.1.0
+
+# Data Engineering & Utilities
+pandas>=2.0.0
+duckdb>=1.0.0
+openpyxl>=3.1.0
+
+# Network and Model Hosting Utilities
+huggingface_hub>=0.23.0
+pyarrow>=15.0.0
