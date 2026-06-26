@@ -46,7 +46,7 @@ def preprocess_and_save(file):
         return None, None, None
 
 
-st.set_page_config(page_title="MotoGP Data Analyst Agent", page_icon="📊")
+st.set_page_config(page_title="Data Analyst Agent", page_icon="📊")
 st.title("📊 Data Analyst Chain")
 
 # Sidebar Configuration (Simplified!)
