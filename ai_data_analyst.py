@@ -3,12 +3,8 @@ import os
 import tempfile
 import duckdb
 import pandas as pd
-import streamlit as st
-from dotenv import load_dotenv  # 1. Import dotenv
+import streamlit as st 
 from openai import OpenAI
-
-# 2. Load environment variables from the .env file right at startup
-load_dotenv()
 
 # Retrieve the token safely from environment memory
 HF_TOKEN = os.getenv("HF_TOKEN")
