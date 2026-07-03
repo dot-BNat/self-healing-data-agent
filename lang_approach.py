@@ -66,33 +66,97 @@ def preprocess_and_save(file):
 
 # --- STREAMLIT UI SETUP ---
 st.set_page_config(
-    page_title="Self-Fixing Data Analyst", page_icon="🤖", layout="wide"
+    page_title="InsightEngine | Self-Fixing Analyst",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
-st.title("🤖 Self-Fixing Data Agent (LangGraph)")
 
+st.markdown("""
+    <style>
+    .main .block-container { padding-top: 2rem; }
+    div[data-testid="stExpander"] { border: 1px solid rgba(49, 51, 63, 0.2); border-radius: 0.5rem; }
+    </style>
+""", unsafe_allow_html=True)
+
+# 2. Sidebar Configuration Setup
 with st.sidebar:
-    st.header("Configuration")
+    st.image("https://img.icons8.com/wired/128/6a11cb/artificial-intelligence.png", width=70)
+    st.title("InsightEngine")
+    st.caption("v2.1 • Powered by LangGraph & HF Router")
+    st.markdown("---")
+
+    st.header("⚙️ Core Status")
     if HF_TOKEN:
-        st.success("🔒 API Token loaded")
+        st.success("🔒 HF API Engine Live")
     else:
-        st.error("❌ Missing HF_TOKEN in your .env file!")
+        st.error("❌ Missing `HUGGINGFACEHUB_API_TOKEN`")
 
-uploaded_file = st.file_uploader(
-    "Upload a CSV or Excel file", type=["csv", "xlsx"]
-)
+    st.markdown("---")
+    st.info(
+        "💡 **How it works:** Drop your file, and the ReAct execution graph will auto-generate, debug, and run local DuckDB queries to analyze your data.")
 
+# 3. Main Dashboard Header Area
+col_header, col_upload = st.columns([2, 1])
+
+with col_header:
+    st.title("🤖 Self-Fixing Data Agent")
+    st.markdown(
+        "Drop a messy file, outline your query, and let the agent auto-write, error-check, and fix its own data pipeline in real-time.")
+
+with col_upload:
+    uploaded_file = st.file_uploader(
+        "Upload dataset", type=["csv", "xlsx"], label_visibility="collapsed"
+    )
+
+st.markdown("---")
+
+# 4. Interactive Workspace Layer (Triggers when file is dropped)
 if uploaded_file is not None:
     temp_path, columns, df = preprocess_and_save(uploaded_file)
 
     if temp_path and columns and df is not None:
-        st.write("### Uploaded Data Preview:")
-        st.dataframe(df.head(5))
-
+        # Load data to DuckDB safely
         safe_path = temp_path.replace("\\", "/")
-        duckdb.execute(
-            f"CREATE OR REPLACE TABLE uploaded_data AS SELECT * FROM read_csv_auto('{safe_path}')"
-        )
+        duckdb.execute(f"CREATE OR REPLACE TABLE uploaded_data AS SELECT * FROM read_csv_auto('{safe_path}')")
 
+        # --- SUB-LEVEL FRONTEND: INSIGHT CARDS ---
+        st.subheader("📊 Dataset Overview")
+        m1, m2, m3, m4 = st.columns(4)
+
+        with m1:
+            st.metric(label="Total Rows", value=f"{len(df):,}")
+        with m2:
+            st.metric(label="Total Columns", value=len(columns))
+        with m3:
+            # Dynamically look for any missing cell counts
+            null_count = df.isnull().sum().sum()
+            st.metric(label="Missing Value Cells", value=null_count, delta=f"-{null_count}" if null_count > 0 else None,
+                      delta_color="inverse")
+        with m4:
+            # Memory footprint approximation
+            mem_mb = df.memory_usage(deep=True).sum() / (1024 * 1024)
+            st.metric(label="Memory Footprint", value=f"{mem_mb:.2f} MB")
+
+        # --- DATA PREVIEW EXPANDER ---
+        with st.expander("🔍 View Raw Inspection Dataset (First 5 Rows)", expanded=True):
+            # Using st.dataframe with configuration options for a table feel
+            st.dataframe(
+                df.head(5),
+                use_container_width=True,
+                column_config={"_index": st.column_config.NumberColumn("Row ID")}
+            )
+
+        # --- NEXT LEVEL INTERACTIVE FILTER CHIPS ---
+        col_explorer_left, col_explorer_right = st.columns([1, 2])
+
+        with col_explorer_left:
+            st.markdown("### 🛠️ Schema Inspector")
+            # Clear text schema readout so user knows what columns they can query against
+            st.dataframe(
+                pd.DataFrame({"Data Type": df.dtypes.astype(str)}),
+                use_container_width=True
+            )
         if HF_TOKEN:
             client = OpenAI(
                 base_url="https://router.huggingface.co/v1", api_key=HF_TOKEN
@@ -209,18 +273,34 @@ if uploaded_file is not None:
             # Compile the graph
             agent_graph = workflow.compile()
 
-            # --- USER INTERFACE RUNTIME ---
+            # --- UPGRADED RUNTIME WORKSPACE ---
+            st.markdown("---")
+            st.markdown("### ⚡ Execution Terminal")
+
             user_query = st.text_area(
-                "Ask your self-healing data agent a question:"
+                "What data insight are you looking for?",
+                placeholder="e.g., 'Find the top 5 highest grossing products in Q3 and clean up any missing price rows.'",
+                help="The agent will draft a DuckDB query, execute it, read any error codes, and automatically rewrite it up to 3 times."
             )
 
-            if st.button("Submit Query"):
-                if user_query.strip() == "":
-                    st.warning("Please type a question.")
+            if st.button("🚀 Run Analytical Agent", type="primary"):
+                if not user_query.strip():
+                    st.toast("⚠️ Please type a query or analysis goal first!")
                 else:
-                    # UI placeholders to show the background agent working live
-                    status_log = st.empty()
-                    code_log = st.empty()
+                    # Pre-allocating elegant interactive slots for live state updates
+                    progress_bar = st.progress(0, text="Initializing Agent Infrastructure...")
+
+                    # This container acts as our live agent debug console
+                    with st.expander("🛠️ Live Agent Execution Stream & Loop State", expanded=True):
+                        terminal_col1, terminal_col2 = st.columns([1, 1])
+                        with terminal_col1:
+                            st.caption("🤖 Thought Process & Logs")
+                            status_log = st.empty()
+                            status_log.info("Agent starting LangGraph runtime loop...")
+                        with terminal_col2:
+                            st.caption("💻 Last Generated Query Draft")
+                            code_log = st.empty()
+                            code_log.code("-- Waiting for first agent loop...", language="sql")
 
                     initial_state = {
                         "user_query": user_query,
@@ -230,22 +310,63 @@ if uploaded_file is not None:
                         "retry_count": 0,
                     }
 
-                    # Execute the graph state loop
-                    with st.spinner("Agent running graph operations..."):
+                    # --- RUNTIME EXECUTION ---
+                    try:
+                        # Update status slightly before invoking
+                        progress_bar.progress(25, text="Processing data schema & generating plan...")
+
+                        # Executing your LangGraph network
                         final_output = agent_graph.invoke(initial_state)
 
-                    # Display what happened behind the scenes
-                    st.write(
-                        f"🔄 **Total Agent Rounds:** {final_output['retry_count']}"
-                    )
-                    st.code(final_output["generated_sql"], language="sql")
+                        # Clear full-bar state when complete
+                        progress_bar.progress(100, text="Graph Execution Finalized.")
 
-                    if final_output["error_message"] == "":
-                        st.markdown("### Output Results View:")
-                        st.dataframe(final_output["query_results"])
-                    else:
-                        st.error(
-                            f"Agent failed to fix query after 3 loops. Final Error: {final_output['error_message']}"
-                        )
+                    except Exception as e:
+                        st.error(f"Fatal Engine Pipeline Crash: {str(e)}")
+                        st.stop()
+
+                    # --- MULTI-LOOP METRIC STRIP ---
+                    st.markdown("### 🎯 Final Execution Insights")
+                    metric_col1, metric_col2, metric_col3 = st.columns(3)
+
+                    with metric_col1:
+                        retries = final_output.get('retry_count', 0)
+                        if retries == 0:
+                            st.metric(label="Self-Healing Loops Required", value="Perfect Run (0)",
+                                      delta="Flawless query parse", delta_color="normal")
+                        else:
+                            st.metric(label="Self-Healing Loops Required", value=f"{retries} Rounds",
+                                      delta=f"{retries} errors auto-fixed", delta_color="inverse")
+
+                    with metric_col2:
+                        status_verdict = "Success" if not final_output.get("error_message") else "Failed"
+                        st.metric(label="Final Run Status", value=status_verdict)
+
+                    with metric_col3:
+                        # Approximate output row counting
+                        results_df = final_output.get("query_results")
+                        row_count = len(results_df) if results_df is not None else 0
+                        st.metric(label="Extracted Result Shape", value=f"{row_count} rows")
+
+                    # --- CODE AND TABLE VIEWER TABS ---
+                    tab_data, tab_code = st.tabs(["📊 Extracted Insights Table", "📜 Inspected Agent Code"])
+
+                    with tab_code:
+                        st.caption("This is the final, functional SQL verified by the self-healing compiler loop.")
+                        st.code(final_output.get("generated_sql", "-- No SQL code generated."), language="sql")
+
+                    with tab_data:
+                        if not final_output.get("error_message"):
+                            if results_df is not None and not results_df.empty:
+                                st.dataframe(results_df, use_container_width=True)
+                            else:
+                                st.info("The query compiled successfully but returned an empty database grid response.")
+                        else:
+                            st.error(
+                                f"🚨 **Self-Healing Failed:** The agent attempted to patch its code but exceeded its run limit. \n\n"
+                                f"**Final Error Trace:** `{final_output['error_message']}`"
+                            )
         else:
-            st.info("Please add your HF_TOKEN to the .env file to continue.")
+            # Stylized clean error banner matching the workspace core status
+            st.warning(
+                "📥 Please drop a valid CSV or Excel target asset above to initialize the analytical workspace context.")
