@@ -63,7 +63,7 @@ Routes execution based on query outcomes:
 
 **LLM & AI**
 
-* Meta-Llama-3-8B-Instruct (via Hugging Face API Router)
+* Llama-3.3-70b-versatile (via GROQ API Router)
 
 **Data Processing**
 
